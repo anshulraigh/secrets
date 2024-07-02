@@ -5,6 +5,8 @@ const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const mongoose = require('mongoose');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
+
 const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
@@ -20,9 +22,10 @@ app.use(bodyParser.urlencoded({
 }));
 
 app.use(session({
-    secret:"Our little secret.",
-    resave:false,
-    saveUninitialized:false
+  secret: process.env.SESSION_SECRET || 'your_secret',
+  resave: false,
+  saveUninitialized: true,
+  store: MongoStore.create({ mongoUrl: 'mongodb://localhost/session-db' })
 }));
 
 app.use(passport.initialize());
@@ -87,8 +90,10 @@ app.get("/login", function (req, res) {
 });
 
 app.get("/logout", function (req, res) {
-    req.logout;
-    res.redirect("/");
+    req.logout(function(err) {
+      if (err) { return next(err); }
+      res.redirect("/");
+    });
 });
 
 app.get("/register", function (req, res) {
@@ -131,9 +136,7 @@ app.post("/submit", function (req, res) {
       });
 });
 
-
 app.post("/register", function (req, res) {
-
  User.register({username: req.body.username},req.body.password, function(err,user){
     if(err){
         console.log(err);
@@ -161,8 +164,6 @@ app.post("/login", function (req, res) {
         }
     })
 });
-
-
 
 const start = async() => {
   const password = process.env.MONGO_PASSWORD;
